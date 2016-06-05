@@ -9,6 +9,7 @@ import re
 import sqlite3
 import hashlib
 
+# id , method ,fullname ,DStype , header , moduel , framework
 
 class database(object):
     def __init__(self):
@@ -22,14 +23,16 @@ class database(object):
             self.__path = os.path.join(os.getcwd(),'DSInterface.db')
             conn = sqlite3.connect(self.__path)
             cursor = conn.cursor()
-            cursor.execute('create table interface (id varchar(40) primary key, method varchar(40),fullname varchar(200), header varchar(20), moduel varchar(20), framework varchar(20))')
+            cursor.execute('create table interface (id varchar(40) primary key, method varchar(40),fullname varchar(200),DStype varchar(20), header varchar(20), moduel varchar(20), framework varchar(20))')
             cursor.close()
             conn.commit()
             conn.close()
 
-    def insert(self,header,framework,moduel = 'None',method = 'None',fullname = 'None'):
+    def insert(self,type,framework,header = 'None',moduel = 'None',method = 'None',fullname = 'None'):
+        if header == 'None':
+            header = type + '.h'
         md5obj=hashlib.md5()
-        md5obj.update((method+fullname+header+moduel+framework).encode('utf-8'))
+        md5obj.update((method+fullname+type+header+moduel+framework).encode('utf-8'))
         id = md5obj.hexdigest()
 
         conn = sqlite3.connect(self.__path)
@@ -38,7 +41,8 @@ class database(object):
         if len(cursor.fetchall()) > 0:
             print('the item has inserted')
         else:
-            cursor.execute("insert into interface (id, method, fullname, header, moduel, framework) values ('%s','%s', '%s', '%s', '%s', '%s')" % (id,method,fullname,header,moduel,framework))
+            print(id,method,fullname,type,header,moduel,framework)
+            cursor.execute("insert into interface (id, method, fullname, DStype, header, moduel, framework) values ('%s','%s','%s', '%s', '%s', '%s', '%s')" % (id,method,fullname,type,header,moduel,framework))
             print('insert:',method,fullname,header,moduel,framework)
         cursor.close()
         conn.commit()
@@ -78,6 +82,7 @@ class database(object):
             methodList = re.findall('<a href="#(.*?)">',page,re.S)
             if len(titleList) >= 1 and len(headerList) >= 1:
                 framework = titleList[0].split(' ')[0]
+                type = titleList[0].split(' ')[-1]
                 header = headerList[0]
                 moduel = 'None'
                 method = 'None'
@@ -89,14 +94,14 @@ class database(object):
                         fullname = x
                         method = x.split('(')[0]
                         md5obj=hashlib.md5()
-                        md5obj.update((method+fullname+header+moduel+framework).encode('utf-8'))
+                        md5obj.update((method+fullname+type+header+moduel+framework).encode('utf-8'))
                         id = md5obj.hexdigest()
-                        self.insert(header,framework,moduel,method,fullname)
+                        self.insert(type,framework,header,moduel,method,fullname)
                 else:
                     md5obj=hashlib.md5()
-                    md5obj.update((method+fullname+header+moduel+framework).encode('utf-8'))
+                    md5obj.update((method+fullname+type+header+moduel+framework).encode('utf-8'))
                     id = md5obj.hexdigest()
-                    self.insert(header,framework,moduel,method,fullname)
+                    self.insert(type,framework,header,moduel,method,fullname)
 
 
                 print('parse ', os.path.split(path)[1], ' successful')
@@ -104,6 +109,26 @@ class database(object):
                 print("parse Wrong:",path)
         else:
             print("file don't exist:", path)
+
+    def querryByHeader(self,header):
+        conn = sqlite3.connect(self.__path)
+        cursor = conn.cursor()
+        cursor.execute("select * from interface WHERE header = '%s' " % header)
+        result = cursor.fetchmany(1)
+        if len(result) == 1:
+            return (result[0][-2],result[0][-1])
+        else:
+            return None
+
+    def querryByType(self, type):
+        conn = sqlite3.connect(self.__path)
+        cursor = conn.cursor()
+        cursor.execute("select * from interface WHERE DStype = '%s' " % type)
+        result = cursor.fetchmany(1)
+        if len(result) == 1:
+            return (result[0][-3],result[0][-2],result[0][-1])
+        else:
+            return None
 
     def __len__(self):
         conn = sqlite3.connect(self.__path)
@@ -117,5 +142,7 @@ class database(object):
 
 if __name__=='__main__':
     db = database()
-    db.initDatabase('/Users/guti/Developer/CAAFinderffffff')
+    # db.initDatabase('/Users/guti/Developer/CAAFinderffffff')
     print(len(db))
+    print(db.querryByHeader('CATDlgUtility.h'))
+    print(db.querryByType('CATDlgUtility'))

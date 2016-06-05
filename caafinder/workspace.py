@@ -7,6 +7,7 @@ __author__ = 'Luca Liu'
 import os
 import shutil
 import re
+import sqlite3
 from datetime import datetime
 from caafinder.database import database
 
@@ -69,41 +70,95 @@ class workspace(object):
             cppList = []
             for each in moduelPath:
                 for x in [x for x in os.listdir(each) if os.path.isfile(os.path.join(each,x)) and x.split('.')[1] == 'cpp']:
-                    cppList.append(os.path.join(each,x))
+                    cppPath = os.path.join(each,x)
+                    res = {}
+                    print(cppPath)
+                    for y in parseCpp(cppPath):
+                        temp = self.__data.querryByType(y)
+                        if temp != None:
+                            res[temp[0]] = (temp[1],temp[2])
+                    FRPath = ''
+                    for y in self.__info:
+                        if os.path.split(each)[0] in self.__info[y]:
+                            FRPath = y
+                            break
+                    headerPath = ''
+                    for y in os.walk(FRPath):
+                        if x.replace('cpp','h') in y[2]:
+                            headerPath = os.path.join(y[0],x.replace('cpp','h'))
 
-            print(cppList[0])
-            print(parseCpp(cppList[0]))
+                    for y in parseHeader(headerPath):
+                        if y in res:
+                            pass
+                        elif self.__data.querryByHeader(y) != None:
+                            res[y] = self.__data.querryByHeader(y)
+                        else:
+                            res[y] = ('None','Custom')
+                    self.__modifyHeader(headerPath, res)
+                    # print(headerPath)
+                    # for key in res:
+                    #     print(key,res[key])
+
+    def __modifyHeader(self,headerPath, res):
+
+        f = open(headerPath, 'r',encoding='iso-8859-1')
+        content = f.read()
+        f.close()
+
+        headerList = re.findall('include(.*?)\n',content)
+        deleteArea = "#include" + headerList[0] + re.findall('%s(.*?)%s'%(headerList[0],headerList[-1]),content,re.S)[0] + headerList[-1]
+        # print(deleteArea)
+
+        updateArea = "//-------------------------------\n// add the DS Header by CAAFinder\n//-------------------------------\n\n"
+
+        result = {}
+        for each in res:
+            if res[each][1] in result:
+                result[res[each][1]].append(each)
+            else:
+                result[res[each][1]] = [each]
+        for each in result:
+            updateArea += ('// ' + each + '\n')
+            for eachHeader in result[each]:
+                if eachHeader.find('>') >= 0:
+                    updateArea += ("#include " + eachHeader + '\n')
+                else:
+                    updateArea += ("#include \"" + eachHeader + "\"" + '\n')
+
+        content = content.replace(deleteArea,updateArea)
+        f = open(headerPath, 'w',encoding='iso-8859-1')
+        f.write(content)
+        f.close()
 
 
+        @property
+        def name(self):
+            return self.__name
+        @property
+        def info(self):
+            print(self.__name)
+            if self.__name != None:
+                for x in self.__info:
+                    print('\t',os.path.split(x)[1])
+                    for y in self.__info[x]:
+                        print('\t\t',os.path.split(y)[1])
 
-    @property
-    def name(self):
-        return self.__name
-    @property
-    def info(self):
-        print(self.__name)
-        if self.__name != None:
-            for x in self.__info:
-                print('\t',os.path.split(x)[1])
-                for y in self.__info[x]:
-                    print('\t\t',os.path.split(y)[1])
+        @property
+        def backupPath(self):
+            return self.__backupPath
+        @backupPath.setter
+        def backupPath(self,value):
+            if os.path.exists(value):
+                self.__backupPath = value
+            else:
+                print("backupPath set wrong")
 
-    @property
-    def backupPath(self):
-        return self.__backupPath
-    @backupPath.setter
-    def backupPath(self,value):
-        if os.path.exists(value):
-            self.__backupPath = value
-        else:
-            print("backupPath set wrong")
-
-    @property
-    def database(self):
-        if self.__name != None:
-            return self.__data
-        else:
-            return None
+        @property
+        def database(self):
+            if self.__name != None:
+                return self.__data
+            else:
+                return None
 
 
 
@@ -131,7 +186,6 @@ def isWorkspace(path):
                 flag = False
         return flag
 
-
 # 解析获取cpp所用的变量或类型
 def parseCpp(cppPath):
     result = set()
@@ -141,25 +195,44 @@ def parseCpp(cppPath):
 
     for each in re.findall('CATLIST(.*?)\)',content,re.S):
         result.add('CATLIST'+each+')')
+        if each[0] == 'V':
+            result.add('CATListVal'+each[2:])
+        elif each[0] == 'P':
+            result.add('CATListPtr'+each[2:])
+            result.add('CATListOf'+each[2:])
+
     for each in re.findall('/\*(.*?)\*/',content,re.S):
         content = content.replace(each,' ')
     for each in ('!','\"',';','->','}','{','(',')',':',"*",',','.','_','/','\t','\n','\\','+','&','=','<','>','%','|','-','[',']'):
         content = content.replace(each, ' ')
     for each in re.findall(' (.*?) ',content,re.S):
-        result.add(each)
+        if len(each) > 4 and each[:3] == 'CAT':
+            result.add(each)
     return result
 
 # 解析头文件
 def parseHeader(headerPath):
     result = []
     if os.path.isfile(headerPath) and os.path.splitext(headerPath)[1] == '.h' :
-        f = open(headerPath, 'r')
+        f = open(headerPath, 'r',encoding='iso-8859-1')
         for line in f.readlines():
             index = line.strip().find('#include')
             if index >= 0 and line[0] != '/':
-                result.append(line.strip()[8:].replace('<','').replace('\"','').replace(' ',''))
+                result.append(line.strip()[8:].replace('\"','').replace(' ',''))
         f.close()
     return result
+
+
+
+
+
+
+
+
+
+
+
+
 
 # 解析Imakefile
 def parseImakefile(imakefilePath):
@@ -171,103 +244,6 @@ def parseImakefile(imakefilePath):
                 result = line.strip()[line.find('=')+1:]
         f.close()
     return result
-
-# 解析workspace
-def parseWorkspace(workSpacePath):
-    result = {}
-    res = []
-    os.path.walk(workSpacePath,visitForParseWS,res)
-    for each in res:
-        for x in os.listdir(os.path.join(each,'src')):
-            temp = os.path.join(os.path.join(each,'src'),x)
-            if os.path.splitext(temp)[1] == '.cpp':
-                cpp = os.path.split(temp)[1]
-                headerList = [cpp.split('.')[0] + '.h','NoFinded']
-                os.path.walk(each,visitForFindHeader,headerList)
-                imakefile = os.path.join(each,'Imakefile.mk')
-                identityCard = os.path.join(os.path.join(os.path.split(each)[0],'IdentityCard'),'IdentityCard.xml')
-                result[cpp] = [imakefile,identityCard,headerList[1]]
-    return result
-
-
-def visitForFindHeader(arg, dirname, names):
-    for each in names:
-        if arg[0] == each:
-            arg[1] = os.path.join(dirname,each)
-
-# 寻找moduel的visit函数
-def visitForParseWS(arg, dirname, names):
-    moduelNameSplit = os.path.split(dirname)[1].split('.')
-    upperPath = os.path.split(os.path.split(dirname)[0])[1]
-    if len(moduelNameSplit) == 2 and moduelNameSplit[1] == 'm' and upperPath != 'win_b64':
-        arg.append(dirname)
-        for each in names:
-            childPath = os.path.join(dirname, each)
-            if(os.path.isfile(childPath)):
-                ext = os.path.splitext(childPath)[1]
-                if (ext == '.cpp') and (os.path.split(dirname)[1] == 'src'):
-                    arg.append(childPath)
-
-
-
-
-
-# 修改头文件
-def modifyHeader(headerPath,cppPath):
-    result = {}
-    f = open(headerPath, 'r')
-    content = f.read()
-    f.close()
-    header = set()
-
-    headerList = re.findall('include(.*?)\n',content)
-    for each in headerList:
-        str = each.replace('"','').replace('>','').replace('<','').replace(' ','')
-        if str.find('.') == -1:
-            str = str + '.h'
-        header.add(str)
-
-    conn = sqlite3.connect(databasePath)
-    cursor = conn.cursor()
-
-    for each in parseCpp(cppPath):
-        cursor.execute('select * from method where header=?', (each,))
-        values = cursor.fetchmany(1)
-        if len(values) >= 1:
-            header.add(each)
-    for each in header:
-        cursor.execute('select * from method where header=?', (each,))
-        values = cursor.fetchmany(1)
-        framework = "Custome"
-        if len(values) >= 1:
-            framework = values[0][4]
-        elif each[0].islower():
-            framework = "Standard C++ Libary"
-        if framework in result:
-            result[framework].append(each)
-        else:
-            result[framework] = [each]
-
-    cursor.close()
-    conn.commit()
-    conn.close()
-
-    deleteArea = "#include" + headerList[0] + re.findall('%s(.*?)%s'%(headerList[0],headerList[-1]),content,re.S)[0] + headerList[-1]
-    # print deleteArea
-    updateArea = "//-------------------------------\n// add the DS Header by CAAFinder\n//-------------------------------\n\n"
-
-    for key in result.keys():
-        updateArea += "// %s\n"%key
-        for value in result[key]:
-            updateArea += '#include "%s"\n'%value
-        updateArea += "\n"
-    # print updateArea
-    content = content.replace(deleteArea,updateArea)
-
-    # print content
-    f = open(headerPath, 'w')
-    f.write(content)
-    f.close()
 
 
 # 修改imakefile文件
@@ -320,8 +296,6 @@ def modifyHeader(headerPath,cppPath):
 
 
 if __name__=='__main__':
-    # iniDatabase('/Users/guti/Developer/CAAFinderffffff/Resource/generated')
-    print(os.getcwd())
     a = workspace('GW_GWS_LC')
-    a.info
-    print(len(a.database))
+
+    a.complete('GWSDDPartProofreader.m')
