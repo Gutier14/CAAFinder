@@ -1,4 +1,3 @@
-#!/usr/bin/env python3
 # -*- coding: utf-8 -*-
 
 ' a CAAFinder module '
@@ -39,37 +38,39 @@ class Workspace(object):
                 self.__info[eachFrmPath].append(eachModPath)
 
     def backup(self):
-        workspacePath = os.path.join(os.getcwd(),self.__name)
-        backupName = self.__name + "_" + datetime.now().strftime('%m%d_%H%M')
-        targetPath = os.path.join(self.__backupPath,backupName)
-        os.mkdir(targetPath)
+        if self.__name != None:
+            workspacePath = os.path.join(os.getcwd(),self.__name)
+            backupName = self.__name + "_" + datetime.now().strftime('%m%d_%H%M')
+            targetPath = os.path.join(self.__backupPath,backupName)
+            os.mkdir(targetPath)
 
-        copiedPathList = [x for x in os.listdir(workspacePath) if os.path.isdir(os.path.join(workspacePath, x)) and x != 'win_b64' and x != 'ToolsData' and x != '.git']
-        for each in copiedPathList:
-            copiedPath = os.path.join(workspacePath, each)
-            copytoPath = os.path.join(targetPath, each)
-            shutil.copytree(copiedPath, copytoPath)
-            ObjectsToDelete = []
-            for x in os.walk(copytoPath):
-                if os.path.split(x[0])[1] == 'win_b64':
-                    ObjectsToDelete.append(x[0])
-            for x in ObjectsToDelete:
-                shutil.rmtree(x)
-            print ("copy " + each + " to " + targetPath + " success")
+            copiedPathList = [x for x in os.listdir(workspacePath) if os.path.isdir(os.path.join(workspacePath, x)) and x != 'win_b64' and x != 'ToolsData' and x != '.git']
+            for each in copiedPathList:
+                copiedPath = os.path.join(workspacePath, each)
+                copytoPath = os.path.join(targetPath, each)
+                shutil.copytree(copiedPath, copytoPath)
+                ObjectsToDelete = []
+                for x in os.walk(copytoPath):
+                    if os.path.split(x[0])[1] == 'win_b64':
+                        ObjectsToDelete.append(x[0])
+                for x in ObjectsToDelete:
+                    shutil.rmtree(x)
+                print ("copy " + each + " to " + targetPath + " success")
 
     def complete(self,moduel = 'all'):
         moduelPath = []
-        for x in self.__info:
-            for y in self.__info[x]:
-                if os.path.split(y)[1] == moduel or moduel == 'all':
-                    moduelPath.append(os.path.join(y,'src'))
-        cppList = []
-        for each in moduelPath:
-            for x in [x for x in os.listdir(each) if os.path.isfile(os.path.join(each,x)) and x.split('.')[1] == 'cpp']:
-                cppList.append(os.path.join(each,x))
+        if self.__name != None:
+            for x in self.__info:
+                for y in self.__info[x]:
+                    if os.path.split(y)[1] == moduel or moduel == 'all':
+                        moduelPath.append(os.path.join(y,'src'))
+            cppList = []
+            for each in moduelPath:
+                for x in [x for x in os.listdir(each) if os.path.isfile(os.path.join(each,x)) and x.split('.')[1] == 'cpp']:
+                    cppList.append(os.path.join(each,x))
 
-        print(cppList[0])
-        print(parseCpp(cppList[0]))
+            print(cppList[0])
+            print(parseCpp(cppList[0]))
 
 
 
@@ -79,10 +80,11 @@ class Workspace(object):
     @property
     def info(self):
         print(self.__name)
-        for x in self.__info:
-            print('\t',os.path.split(x)[1])
-            for y in self.__info[x]:
-                print('\t\t',os.path.split(y)[1])
+        if self.__name != None:
+            for x in self.__info:
+                print('\t',os.path.split(x)[1])
+                for y in self.__info[x]:
+                    print('\t\t',os.path.split(y)[1])
 
     @property
     def backupPath(self):
@@ -190,12 +192,6 @@ def parseCpp(cppPath):
     for each in re.findall(' (.*?) ',content,re.S):
         result.add(each)
     return result
-
-
-
-
-
-
 
 # 解析头文件
 def parseHeader(headerPath):
@@ -378,15 +374,8 @@ def isFramework(path):
 
 
 if __name__=='__main__':
-    iniDatabase('/Users/guti/Developer/CAAFinderffffff/Resource/generated')
-    # a = Workspace('GW_GWS_LC')
-    # a.info
-    # a.complete()
-
-
-
-
-
-
-
-
+    # iniDatabase('/Users/guti/Developer/CAAFinderffffff/Resource/generated')
+    print(os.getcwd())
+    a = Workspace('GW_GWS_LC')
+    a.info
+    a.complete()
