@@ -1,17 +1,15 @@
 # -*- coding: utf-8 -*-
 
-' a CAAFinder module '
+' a caa workspace module '
 
 __author__ = 'Luca Liu'
 
 import os
 import shutil
-from datetime import datetime
 import re
-import sqlite3
+from datetime import datetime
 
-
-class Workspace(object):
+class workspace(object):
     def __init__(self, workspaceName):
         self.__backupPath = os.getcwd()
         workspacePath = os.path.join(os.getcwd(),workspaceName)
