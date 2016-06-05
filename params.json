@@ -1,0 +1,6 @@
+{
+  "name": "Caafinder",
+  "tagline": "DS CAA Development Assistant",
+  "body": "# CAAFinder\r\nDS CAA Development Assistant\r\n## 主要功能\r\n- Workspace管理\r\n- 头文件、模块、框架自动补全\r\n- 搭建快速测试模块\r\n\r\n## 安装\r\n\r\n```\r\npip install caafinder\r\n```\r\n\r\n\r\n## 协作\r\n欢迎大家一起来参与，联系方式：geekluca@qq.com\r\n",
+  "note": "Don't delete this file! It's used internally to help with page regeneration."
+}
