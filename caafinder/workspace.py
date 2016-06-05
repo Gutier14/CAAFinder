@@ -8,6 +8,7 @@ import os
 import shutil
 import re
 from datetime import datetime
+from caafinder.database import database
 
 class workspace(object):
     def __init__(self, workspaceName):
@@ -16,6 +17,9 @@ class workspace(object):
         if os.path.exists(workspacePath) and isWorkspace(workspacePath):
             self.__name = workspaceName
             self.parseWorkspace()
+            self.__data = database()
+            if len(self.__data) == 0:
+                self.__data.initDatabase(os.getcwd())
         else:
             self.__name = None
 
@@ -94,6 +98,12 @@ class workspace(object):
         else:
             print("backupPath set wrong")
 
+    @property
+    def database(self):
+        if self.__name != None:
+            return self.__data
+        else:
+            return None
 
 
 
@@ -121,58 +131,6 @@ def isWorkspace(path):
                 flag = False
         return flag
 
-# 初始化数据库
-def iniDatabase(caaDocPath):
-    conn = sqlite3.connect('DSMethod.db')
-    cursor = conn.cursor()
-    # cursor.execute("SELECT tbl_name FROM sqlite_master WHERE type='table'")
-    cursor.execute('create table method (id varchar(20) primary key, header varchar(20), moduel varchar(20), framework varchar(20))')
-    if os.path.exists(caaDocPath):
-        MasterIdx = ""
-        for each in os.walk(caaDocPath):
-            if 'MasterIdx.htm' in each[2]:
-                MasterIdx = os.path.join(each[0],'MasterIdx.htm')
-                break
-        urlset = set()
-        if MasterIdx != '':
-            f = open(MasterIdx,'r',encoding='iso-8859-1')
-            content = f.read()
-            f.close()
-            basePath = MasterIdx.split('/_index')[0]
-            for each in re.findall('<a href="(.*?)"',content,re.S):
-                if '#' in each:
-                    each = each.split('#')[0]
-                each = basePath + each[2:]
-                if os.path.isfile(each):
-                    urlset.add(each)
-        print(len(urlset))
-        # result = set()
-        i = 1000
-        for each in urlset:
-            if os.path.exists(each):
-                f = open(each,'r',encoding='iso-8859-1')
-                page = f.read()
-                f.close()
-                titleList = re.findall('<title>(.*?)</title>',page,re.S)
-                moduelList = re.findall('include the module: <b>(.*?)</b>',page,re.S)
-                headerList = re.findall('included in the file: <b>(.*?)</b>',page,re.S)
-                if len(titleList) >= 1 and len(headerList) >= 1:
-                    framework = titleList[0].split(' ')[0]
-                    header = headerList[0]
-                    moduel = 'None'
-                    if len(moduelList) >= 1:
-                        moduel = moduelList[0]
-                    f = open('/Users/guti/Desktop/test.txt','a')
-                    # result.add((header,moduel,framework))
-                    cursor.execute("insert into method (id, header, moduel, framework) values ('%s','%s', '%s', '%s')" % (i,header,moduel,framework))
-                    i += 1
-                else:
-                    print("parse Wrong:",each)
-            else:
-                print("file don't exist:", each)
-    cursor.close()
-    conn.commit()
-    conn.close()
 
 # 解析获取cpp所用的变量或类型
 def parseCpp(cppPath):
@@ -358,22 +316,12 @@ def modifyHeader(headerPath,cppPath):
 
 
 
-def isFramework(path):
-
-    pass
-
-
-
-
-
-
-
 
 
 
 if __name__=='__main__':
     # iniDatabase('/Users/guti/Developer/CAAFinderffffff/Resource/generated')
     print(os.getcwd())
-    a = Workspace('GW_GWS_LC')
+    a = workspace('GW_GWS_LC')
     a.info
-    a.complete()
+    print(len(a.database))
