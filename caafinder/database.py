@@ -5,8 +5,117 @@
 __author__ = 'Luca Liu'
 
 import os
+import re
 import sqlite3
+import hashlib
 
 
 class database(object):
-    pass
+    def __init__(self):
+        self.__path = None
+        for x in os.walk(os.getcwd()):
+            for y in x[2]:
+                if y == 'DSInterface.db':
+                    self.__path = os.path.join(x[0],y)
+                    break
+        if self.__path == None:
+            self.__path = os.path.join(os.getcwd(),'DSInterface.db')
+            conn = sqlite3.connect(self.__path)
+            cursor = conn.cursor()
+            cursor.execute('create table interface (id varchar(40) primary key, method varchar(40),fullname varchar(200), header varchar(20), moduel varchar(20), framework varchar(20))')
+            cursor.close()
+            conn.commit()
+            conn.close()
+
+    def insert(self,header,framework,moduel = 'None',method = 'None',fullname = 'None'):
+        md5obj=hashlib.md5()
+        md5obj.update((method+fullname+header+moduel+framework).encode('utf-8'))
+        id = md5obj.hexdigest()
+
+        conn = sqlite3.connect(self.__path)
+        cursor = conn.cursor()
+        cursor.execute("select id from interface WHERE id = '%s' " % id)
+        if len(cursor.fetchall()) > 0:
+            print('the item has inserted')
+        else:
+            cursor.execute("insert into interface (id, method, fullname, header, moduel, framework) values ('%s','%s', '%s', '%s', '%s', '%s')" % (id,method,fullname,header,moduel,framework))
+            print('insert:',method,fullname,header,moduel,framework)
+        cursor.close()
+        conn.commit()
+        conn.close()
+
+    def initDatabase(self,caaDocPath):
+        if os.path.exists(caaDocPath):
+            MasterIdx = ""
+            for each in os.walk(caaDocPath):
+                if 'MasterIdx.htm' in each[2]:
+                    MasterIdx = os.path.join(each[0],'MasterIdx.htm')
+                    break
+            urlset = set()
+            if MasterIdx != '':
+                f = open(MasterIdx,'r',encoding='iso-8859-1')
+                content = f.read()
+                f.close()
+                basePath = MasterIdx.split('/_index')[0]
+                for each in re.findall('<a href="(.*?)"',content,re.S):
+                    if '#' in each:
+                        each = each.split('#')[0]
+                    each = basePath + each[2:]
+                    if os.path.isfile(each):
+                        urlset.add(each)
+            print(len(urlset),'pages need to parse')
+            for each in urlset:
+                self.parsePage(each)
+
+    def parsePage(self,path):
+        if os.path.exists(path):
+            f = open(path,'r',encoding='iso-8859-1')
+            page = f.read()
+            f.close()
+            titleList = re.findall('<title>(.*?)</title>',page,re.S)
+            moduelList = re.findall('include the module: <b>(.*?)</b>',page,re.S)
+            headerList = re.findall('included in the file: <b>(.*?)</b>',page,re.S)
+            methodList = re.findall('<a href="#(.*?)">',page,re.S)
+            if len(titleList) >= 1 and len(headerList) >= 1:
+                framework = titleList[0].split(' ')[0]
+                header = headerList[0]
+                moduel = 'None'
+                method = 'None'
+                fullname = 'None'
+                if len(moduelList) >= 1:
+                    moduel = moduelList[0]
+                if len(methodList) >= 1:
+                    for x in methodList:
+                        fullname = x
+                        method = x.split('(')[0]
+                        md5obj=hashlib.md5()
+                        md5obj.update((method+fullname+header+moduel+framework).encode('utf-8'))
+                        id = md5obj.hexdigest()
+                        self.insert(header,framework,moduel,method,fullname)
+                else:
+                    md5obj=hashlib.md5()
+                    md5obj.update((method+fullname+header+moduel+framework).encode('utf-8'))
+                    id = md5obj.hexdigest()
+                    self.insert(header,framework,moduel,method,fullname)
+
+
+                print('parse ', os.path.split(path)[1], ' successful')
+            else:
+                print("parse Wrong:",path)
+        else:
+            print("file don't exist:", path)
+
+    def __len__(self):
+        conn = sqlite3.connect(self.__path)
+        cursor = conn.cursor()
+        cursor.execute('select id from interface')
+        num = len(cursor.fetchall())
+        cursor.close()
+        conn.commit()
+        conn.close()
+        return num
+
+if __name__=='__main__':
+    db = database()
+    db.initDatabase('/Users/guti/Developer/CAAFinderffffff')
+    print(len(db))
