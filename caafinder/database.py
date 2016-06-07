@@ -130,6 +130,18 @@ class database(object):
         else:
             return None
 
+    def querryByModuel(self,moduel):
+        conn = sqlite3.connect(self.__path)
+        cursor = conn.cursor()
+        cursor.execute("select * from interface WHERE moduel = '%s' " % moduel)
+        result = cursor.fetchmany(1)
+        if len(result) == 1:
+            return result[0][-1]
+        else:
+            return None
+        
+
+
     def __len__(self):
         conn = sqlite3.connect(self.__path)
         cursor = conn.cursor()
@@ -146,3 +158,4 @@ if __name__=='__main__':
     print(len(db))
     print(db.querryByHeader('CATDlgUtility.h'))
     print(db.querryByType('CATDlgUtility'))
+    print(db.querryByModuel('JS0FM'))

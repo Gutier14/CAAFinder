@@ -5,7 +5,11 @@ DS CAA Development Assistant
 - 头文件、模块、框架自动补全
 - 搭建快速测试模块
 
+## 安装
 
+```
+pip install caafinder
+```
 
 
 ## 协作
