@@ -135,8 +135,32 @@ class workspace(object):
             identitycardPath = os.path.join(os.path.join(each,'IdentityCard'),'IdentityCard.xml')
             self.__modifyIdentityCard(identitycardPath,frameworkRes[each])
 
-
-
+    @property
+    def name(self):
+        return self.__name
+    @property
+    def info(self):
+        print(self.__name)
+        if self.__name != None:
+            for x in self.__info:
+                print('\t',os.path.split(x)[1])
+                for y in self.__info[x]:
+                    print('\t\t',os.path.split(y)[1])
+    @property
+    def backupPath(self):
+        return self.__backupPath
+    @backupPath.setter
+    def backupPath(self,value):
+        if os.path.exists(value):
+            self.__backupPath = value
+        else:
+            print("backupPath set wrong")
+    @property
+    def database(self):
+        if self.__name != None:
+            return self.__data
+        else:
+            return None
 
 
     def __modifyHeader(self,headerPath, res):
@@ -169,36 +193,6 @@ class workspace(object):
         f = open(headerPath, 'w',encoding='iso-8859-1')
         f.write(content)
         f.close()
-
-
-        @property
-        def name(self):
-            return self.__name
-        @property
-        def info(self):
-            print(self.__name)
-            if self.__name != None:
-                for x in self.__info:
-                    print('\t',os.path.split(x)[1])
-                    for y in self.__info[x]:
-                        print('\t\t',os.path.split(y)[1])
-
-        @property
-        def backupPath(self):
-            return self.__backupPath
-        @backupPath.setter
-        def backupPath(self,value):
-            if os.path.exists(value):
-                self.__backupPath = value
-            else:
-                print("backupPath set wrong")
-
-        @property
-        def database(self):
-            if self.__name != None:
-                return self.__data
-            else:
-                return None
 
     def parseImakefile(self,imakefilePath):
         result = {}
@@ -326,10 +320,7 @@ def parseHeader(headerPath):
         f.close()
     return result
 
-def parseIdentityCard(identitycardPath):
-    if os.path.split(identitycardPath)[1] == 'IdentityCard.xml':
 
-        root = etree.Element("root")
 
 
 

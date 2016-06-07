@@ -1,5 +1,11 @@
-from caafinder.caafinder import *
+# -*- coding: utf-8 -*-
 
-a = Workspace(' ')
-print(a.name)
-print(a.info)
+from caafinder.workspace import workspace
+from caafinder.database import database
+import os
+
+if __name__=='__main__':
+    print(os.getcwd())
+    ws = workspace('WS')
+    data = ws.data
+    print(len(data))
