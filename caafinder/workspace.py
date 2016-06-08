@@ -77,7 +77,7 @@ class workspace(object):
                 for x in [x for x in os.listdir(each) if os.path.isfile(os.path.join(each,x)) and x.split('.')[1] == 'cpp']:
                     cppPath = os.path.join(each,x)
 
-                    print(cppPath)
+                    # print(cppPath)
                     for y in parseCpp(cppPath):
                         temp = self.__data.querryByType(y)
                         if temp != None:
@@ -109,10 +109,10 @@ class workspace(object):
                             else:
                                 res[y] = ('None','Custom')
                         self.__modifyHeader(headerPath, res)
-                        print(headerPath)
+                        # print(headerPath)
                     Moduel = os.path.split(each)[0]
-                    print(Moduel)
-                    print(FRPath)
+                    # print(Moduel)
+                    # print(FRPath)
 
                     for y in res:
                         if Moduel in moduelRes:
@@ -170,6 +170,7 @@ class workspace(object):
 
 
     def __modifyHeader(self,headerPath, res):
+        print(headerPath)
 
         f = open(headerPath, 'r',encoding='iso-8859-1')
         content = f.read()
@@ -226,6 +227,7 @@ class workspace(object):
         return (result,cus)
 
     def __modifyImakefile(self,imakefile,res,cus):
+        print(imakefile)
         moduel = os.path.split(os.path.split(imakefile)[0])[1].split('.')[0]
         content = '#======================================================================\n'
         content += '# Imakefile for module %s\n' %moduel
@@ -354,7 +356,7 @@ def parseHeader(headerPath):
 
 
 if __name__=='__main__':
-    a = workspace('WS')
+    a = workspace('GW_WS_LC')
     a.info
     a.complete()
     # a.complete('GWSDDPartProofreader.m')
