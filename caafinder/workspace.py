@@ -63,6 +63,7 @@ class workspace(object):
                 print ("copy " + each + " to " + targetPath + " success")
 
     def complete(self,moduel = 'all'):
+        res = {}
         moduelRes = {}
         frameworkRes = {}
         moduelPath = []
@@ -71,21 +72,23 @@ class workspace(object):
                 for y in self.__info[x]:
                     if os.path.split(y)[1] == moduel or moduel == 'all':
                         moduelPath.append(os.path.join(y,'src'))
-            cppList = []
+            # 遍历每个moduel
             for each in moduelPath:
                 for x in [x for x in os.listdir(each) if os.path.isfile(os.path.join(each,x)) and x.split('.')[1] == 'cpp']:
                     cppPath = os.path.join(each,x)
-                    res = {}
+
                     print(cppPath)
                     for y in parseCpp(cppPath):
                         temp = self.__data.querryByType(y)
                         if temp != None:
                             res[temp[0]] = (temp[1],temp[2])
+
                     FRPath = ''
                     for y in self.__info:
                         if os.path.split(each)[0] in self.__info[y]:
                             FRPath = y
                             break
+
                     headerPath = ''
                     for y in os.walk(FRPath):
                         if x.replace('cpp','h') in y[2]:
@@ -97,18 +100,20 @@ class workspace(object):
                                 headerPath = temp
                                 break
 
-                    for y in parseHeader(headerPath):
-                        if y in res:
-                            pass
-                        elif self.__data.querryByHeader(y) != None:
-                            res[y] = self.__data.querryByHeader(y)
-                        else:
-                            res[y] = ('None','Custom')
-                    self.__modifyHeader(headerPath, res)
-                    print(headerPath)
+                    if os.path.exists(headerPath):
+                        for y in parseHeader(headerPath):
+                            if y in res:
+                                pass
+                            elif self.__data.querryByHeader(y) != None:
+                                res[y] = self.__data.querryByHeader(y)
+                            else:
+                                res[y] = ('None','Custom')
+                        self.__modifyHeader(headerPath, res)
+                        print(headerPath)
                     Moduel = os.path.split(each)[0]
                     print(Moduel)
                     print(FRPath)
+
                     for y in res:
                         if Moduel in moduelRes:
                             moduelRes[Moduel].add(res[y][0])
@@ -121,19 +126,19 @@ class workspace(object):
                             frameworkRes[FRPath] = set()
                             frameworkRes[FRPath].add(res[y][1])
 
-        mkPathList = map(lambda x:x.replace('src','Imakefile.mk'),moduelPath)
+            mkPathList = map(lambda x:x.replace('src','Imakefile.mk'),moduelPath)
 
-        for each in mkPathList:
-            moduelSet = moduelRes[os.path.split(each)[0]]
-            for x in self.parseImakefile(each):
-                moduelSet.add(x)
-            if 'None' in moduelSet:
-                moduelSet.remove('None')
-            self.__modifyImakefile(each,moduelSet)
+            for each in mkPathList:
+                moduelSet = moduelRes[os.path.split(each)[0]]
+                for x in self.parseImakefile(each):
+                    moduelSet.add(x)
+                if 'None' in moduelSet:
+                    moduelSet.remove('None')
+                self.__modifyImakefile(each,moduelSet)
 
-        for each in frameworkRes:
-            identitycardPath = os.path.join(os.path.join(each,'IdentityCard'),'IdentityCard.xml')
-            self.__modifyIdentityCard(identitycardPath,frameworkRes[each])
+            for each in frameworkRes:
+                identitycardPath = os.path.join(os.path.join(each,'IdentityCard'),'IdentityCard.xml')
+                self.__modifyIdentityCard(identitycardPath,frameworkRes[each])
 
     @property
     def name(self):
@@ -248,7 +253,7 @@ class workspace(object):
 
         # print(len(container))
         for each in res:
-            if each in container:
+            if each in container and each == 'Custom':
                 pass
             else:
                 child = etree.Element("prerequisite", name=each,access="Public")
