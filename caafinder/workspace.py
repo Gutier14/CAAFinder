@@ -130,11 +130,12 @@ class workspace(object):
 
             for each in mkPathList:
                 moduelSet = moduelRes[os.path.split(each)[0]]
-                for x in self.parseImakefile(each):
+                parseRes = self.parseImakefile(each)
+                for x in parseRes[0]:
                     moduelSet.add(x)
                 if 'None' in moduelSet:
                     moduelSet.remove('None')
-                self.__modifyImakefile(each,moduelSet)
+                self.__modifyImakefile(each,moduelSet,parseRes[1])
 
             for each in frameworkRes:
                 identitycardPath = os.path.join(os.path.join(each,'IdentityCard'),'IdentityCard.xml')
@@ -174,11 +175,16 @@ class workspace(object):
         content = f.read()
         f.close()
 
-        headerList = re.findall('include(.*?)\n',content)
-        deleteArea = "#include" + headerList[0] + re.findall('%s(.*?)%s'%(headerList[0],headerList[-1]),content,re.S)[0] + headerList[-1]
-        # print(deleteArea)
+        deleteArea = ''
+        deleteArealist = re.findall('// Add the DS Header by CAAFINDER(.*?)// END CAAFINDER EDITION ZONE',content,re.S)
+        if len(deleteArealist) == 1:
+            deleteArea = '// Add the DS Header by CAAFINDER' + deleteArealist[0] + '// END CAAFINDER EDITION ZONE'
+        else:
+            headerList = re.findall('include(.*?)\n',content)
+            deleteArea = "#include" + headerList[0] + re.findall('%s(.*?)%s'%(headerList[0],headerList[-1]),content,re.S)[0] + headerList[-1]
+            # print(deleteArea)
 
-        updateArea = "//-------------------------------\n// add the DS Header by CAAFinder\n//-------------------------------\n\n"
+        updateArea = "// Add the DS Header by CAAFINDER\n"
 
         result = {}
         for each in res:
@@ -193,29 +199,33 @@ class workspace(object):
                     updateArea += ("#include " + eachHeader + '\n')
                 else:
                     updateArea += ("#include \"" + eachHeader + "\"" + '\n')
-
+        updateArea += '// END CAAFINDER EDITION ZONE\n'
         content = content.replace(deleteArea,updateArea)
         f = open(headerPath, 'w',encoding='iso-8859-1')
         f.write(content)
         f.close()
 
     def parseImakefile(self,imakefilePath):
-        result = {}
+        result = set()
+        cus = set()
         if os.path.isfile(imakefilePath) and os.path.split(imakefilePath)[1] == 'Imakefile.mk' :
             f = open(imakefilePath, 'r',encoding='iso-8859-1')
             for line in f.readlines():
                 if line[0] == '#' or line[0] == '/':
                     pass
+                elif line.find('LINK_WITH = $(CAAFINDER_LINK_MODULES)') != -1:
+                    for each in line.replace('LINK_WITH = $(CAAFINDER_LINK_MODULES)',' ').replace('\n',' ').split(' '):
+                        cus.add(each)
                 else:
                     selector = [x for x in line.replace('\\',' ').replace('=',' ').split(' ') if len(x) > 3]
                     for each in selector:
                         fr = self.__data.querryByModuel(each)
                         if fr != None:
-                            result[each] = fr
+                            result.add(fr)
             f.close()
-        return result
+        return (result,cus)
 
-    def __modifyImakefile(self,imakefile,res):
+    def __modifyImakefile(self,imakefile,res,cus):
         moduel = os.path.split(os.path.split(imakefile)[0])[1].split('.')[0]
         content = '#======================================================================\n'
         content += '# Imakefile for module %s\n' %moduel
@@ -225,7 +235,16 @@ class workspace(object):
         content += '\n\n'
         content += 'BUILT_OBJECT_TYPE=SHARED LIBRARY\n#BUILT_OBJECT_TYPE=LOAD MODULE\n'
         content += '\n\n'
-        content += 'LINK_WITH = \\\n'
+        content += 'LINK_WITH = $(CAAFINDER_LINK_MODULES)'
+
+        for each in cus:
+            content += (' '+ each)
+        content += '\n'
+
+        content += "# DO NOT EDIT :: CAAFINDER WILL ADD CODE HERE\n"
+
+        content += 'CAAFINDER_LINK_MODULES = \\\n'
+
         for each in res:
             content += '%s \\\n'%each
         content += '\n\n'
@@ -335,7 +354,8 @@ def parseHeader(headerPath):
 
 
 if __name__=='__main__':
-    a = workspace('GW_WS_LC')
+    a = workspace('WS')
+    a.info
     a.complete()
     # a.complete('GWSDDPartProofreader.m')
     # parseIdentityCard('/Users/guti/Developer/CAAFinder/caafinder/GW_GWS_LC/GWStruct/IdentityCard/IdentityCard.xml')

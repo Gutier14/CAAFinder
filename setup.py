@@ -2,7 +2,7 @@ from setuptools import setup, find_packages
 
 setup(
     name = 'caafinder',
-    version = '0.3.5',
+    version = '0.3.6',
     keywords='ds caa',
     description = 'a library for DS CAA Developer',
     license = 'MIT License',
