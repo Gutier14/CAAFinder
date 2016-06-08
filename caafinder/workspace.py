@@ -63,7 +63,6 @@ class workspace(object):
                 print ("copy " + each + " to " + targetPath + " success")
 
     def complete(self,moduel = 'all'):
-        res = {}
         moduelRes = {}
         frameworkRes = {}
         moduelPath = []
@@ -76,7 +75,7 @@ class workspace(object):
             for each in moduelPath:
                 for x in [x for x in os.listdir(each) if os.path.isfile(os.path.join(each,x)) and x.split('.')[1] == 'cpp']:
                     cppPath = os.path.join(each,x)
-
+                    res = {}
                     # print(cppPath)
                     for y in parseCpp(cppPath):
                         temp = self.__data.querryByType(y)
@@ -96,7 +95,7 @@ class workspace(object):
                             f = open(temp,'r',encoding='iso-8859-1')
                             cont = f.read()
                             f.close()
-                            if '#include' in cont:
+                            if cont.find('#include') > 1:
                                 headerPath = temp
                                 break
 
@@ -274,7 +273,7 @@ class workspace(object):
 
         # print(len(container))
         for each in res:
-            if each in container and each == 'Custom':
+            if each in container or each == 'Custom':
                 pass
             else:
                 child = etree.Element("prerequisite", name=each,access="Public")
@@ -356,8 +355,9 @@ def parseHeader(headerPath):
 
 
 if __name__=='__main__':
-    a = workspace('GW_WS_LC')
+    a = workspace('GW')
     a.info
+    a.backup()
     a.complete()
     # a.complete('GWSDDPartProofreader.m')
     # parseIdentityCard('/Users/guti/Developer/CAAFinder/caafinder/GW_GWS_LC/GWStruct/IdentityCard/IdentityCard.xml')
