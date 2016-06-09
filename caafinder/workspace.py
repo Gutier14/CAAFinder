@@ -62,83 +62,92 @@ class workspace(object):
                     shutil.rmtree(x)
                 print ("copy " + each + " to " + targetPath + " success")
 
-    def complete(self,moduel = 'all'):
-        moduelRes = {}
-        frameworkRes = {}
-        moduelPath = []
-        if self.__name != None:
-            for x in self.__info:
-                for y in self.__info[x]:
-                    if os.path.split(y)[1] == moduel or moduel == 'all':
-                        moduelPath.append(os.path.join(y,'src'))
-            # 遍历每个moduel
-            for each in moduelPath:
-                for x in [x for x in os.listdir(each) if os.path.isfile(os.path.join(each,x)) and x.split('.')[1] == 'cpp']:
-                    cppPath = os.path.join(each,x)
-                    res = {}
-                    # print(cppPath)
-                    for y in parseCpp(cppPath):
-                        temp = self.__data.querryByType(y)
-                        if temp != None:
-                            res[temp[0]] = (temp[1],temp[2])
+    def completeUnit(self,cppPath):
+        data = self.__data
 
-                    FRPath = ''
-                    for y in self.__info:
-                        if os.path.split(each)[0] in self.__info[y]:
-                            FRPath = y
+        mPath = os.path.join(os.path.split(os.path.split(cppPath)[0])[0],'Imakefile.mk')
+        Fr = os.path.split(os.path.split(mPath)[0])[0]
+        iPath = os.path.join(os.path.join(Fr,'IdentityCard'),'IdentityCard.xml')
+        hPath = None
+        for each in os.walk(Fr):
+            for eachfile in each[2]:
+                if eachfile == os.path.split(cppPath)[1].replace('cpp','h'):
+                    tempPath = os.path.join(each[0],eachfile)
+                    if os.path.exists(tempPath):
+                        f = open(tempPath,'r',encoding='iso-8859-1')
+                        content = f.read()
+                        f.close()
+                        if content.find(('class ' + eachfile.split('.')[0])) > 0 :
+                            hPath = tempPath
                             break
+        if hPath == None:
+            return
+        if os.path.exists(mPath) and os.path.exists(iPath) and os.path.exists(cppPath):
+            DSType = parseCpp(cppPath,data)
+            headerTuple = parseHeader(hPath,data)
+            headerDS = headerTuple[0]
+            headerCS = headerTuple[1]
+            moduleTuple = parseImakefile(mPath,data)
+            moduleDS = moduleTuple[0]
+            moduleCS = moduleTuple[1]
+            frameworkTuple = parseIdentityCard(iPath,data)
+            frameworkDS = frameworkTuple[0]
+            frameworkCS = frameworkTuple[1]
 
-                    headerPath = ''
-                    for y in os.walk(FRPath):
-                        if x.replace('cpp','h') in y[2]:
-                            temp = os.path.join(y[0],x.replace('cpp','h'))
-                            f = open(temp,'r',encoding='iso-8859-1')
-                            cont = f.read()
-                            f.close()
-                            if cont.find('#include') > 1:
-                                headerPath = temp
-                                break
 
-                    if os.path.exists(headerPath):
-                        for y in parseHeader(headerPath):
-                            if y in res:
-                                pass
-                            elif self.__data.querryByHeader(y) != None:
-                                res[y] = self.__data.querryByHeader(y)
-                            else:
-                                res[y] = ('None','Custom')
-                        self.__modifyHeader(headerPath, res)
-                        # print(headerPath)
-                    Moduel = os.path.split(each)[0]
-                    # print(Moduel)
-                    # print(FRPath)
+            for dstype in DSType:
+                # header moduel framework
+                dbTupleForDSType = data.querryByType(dstype)
+                header = dbTupleForDSType[0]
+                moduel = dbTupleForDSType[1]
+                framework = dbTupleForDSType[2]
 
-                    for y in res:
-                        if Moduel in moduelRes:
-                            moduelRes[Moduel].add(res[y][0])
-                        else:
-                            moduelRes[Moduel] = set()
-                            moduelRes[Moduel].add(res[y][0])
-                        if FRPath in frameworkRes:
-                            frameworkRes[FRPath].add(res[y][1])
-                        else:
-                            frameworkRes[FRPath] = set()
-                            frameworkRes[FRPath].add(res[y][1])
+                if header not in headerDS and header != 'None':
+                    headerDS.add(header)
+                    print("add Header:" + header + ' to ' + hPath)
+                if moduel not in moduleDS and moduel != 'None':
+                    moduleDS.add(moduel)
+                    print("add moduel:" + moduel + ' to ' + mPath)
+                if framework not in frameworkDS and framework != 'None':
+                    frameworkDS.add(framework)
+                    print("add framework:" +framework+ ' to ' + iPath)
 
-            mkPathList = map(lambda x:x.replace('src','Imakefile.mk'),moduelPath)
 
-            for each in mkPathList:
-                moduelSet = moduelRes[os.path.split(each)[0]]
-                parseRes = self.parseImakefile(each)
-                for x in parseRes[0]:
-                    moduelSet.add(x)
-                if 'None' in moduelSet:
-                    moduelSet.remove('None')
-                self.__modifyImakefile(each,moduelSet,parseRes[1])
+            modifyHeader(hPath,headerDS,headerCS,data)
+            modifyImakefile(mPath,moduleDS,moduleCS)
+            modifyIdentityCard(iPath,frameworkDS,frameworkCS)
 
-            for each in frameworkRes:
-                identitycardPath = os.path.join(os.path.join(each,'IdentityCard'),'IdentityCard.xml')
-                self.__modifyIdentityCard(identitycardPath,frameworkRes[each])
+    def completeModuel(self,moduel):
+        moduelPath = ''
+        for eachFr in self.__info:
+            for eachModuel in self.__info[eachFr]:
+                if os.path.split(eachModuel)[1].split('.')[0] == moduel:
+                    moduelPath = eachModuel
+        if moduelPath == '':
+            return
+
+        for eachdir in os.listdir(os.path.join(moduelPath,'src')):
+            if eachdir.find('.cpp') > 0:
+                cpp = os.path.join(os.path.join(moduelPath,'src'),eachdir)
+                if os.path.exists(cpp):
+                    self.completeUnit(cpp)
+
+    def completeFramework(self,framework):
+        frameworkPath = ''
+        for eachFr in self.__info:
+            if os.path.split(eachFr)[1] == framework:
+                frameworkPath = eachFr
+        if frameworkPath == '':
+            return
+        for eachdir in os.listdir(frameworkPath):
+            path = os.path.join(frameworkPath,eachdir)
+            if os.path.isdir(path) and eachdir.find('.m') > 0:
+                self.completeModuel(eachdir.split('.')[0])
+
+    def completeAll(self):
+        for each in self.info:
+            self.completeFramework(os.path.split(each)[1])
+
 
     @property
     def name(self):
@@ -168,124 +177,6 @@ class workspace(object):
             return None
 
 
-    def __modifyHeader(self,headerPath, res):
-        print(headerPath)
-
-        f = open(headerPath, 'r',encoding='iso-8859-1')
-        content = f.read()
-        f.close()
-
-        deleteArea = ''
-        deleteArealist = re.findall('// Add the DS Header by CAAFINDER(.*?)// END CAAFINDER EDITION ZONE',content,re.S)
-        if len(deleteArealist) == 1:
-            deleteArea = '// Add the DS Header by CAAFINDER' + deleteArealist[0] + '// END CAAFINDER EDITION ZONE'
-        else:
-            headerList = re.findall('include(.*?)\n',content)
-            deleteArea = "#include" + headerList[0] + re.findall('%s(.*?)%s'%(headerList[0],headerList[-1]),content,re.S)[0] + headerList[-1]
-            # print(deleteArea)
-
-        updateArea = "// Add the DS Header by CAAFINDER\n"
-
-        result = {}
-        for each in res:
-            if res[each][1] in result:
-                result[res[each][1]].append(each)
-            else:
-                result[res[each][1]] = [each]
-        for each in result:
-            updateArea += ('// ' + each + '\n')
-            for eachHeader in result[each]:
-                if eachHeader.find('>') >= 0:
-                    updateArea += ("#include " + eachHeader + '\n')
-                else:
-                    updateArea += ("#include \"" + eachHeader + "\"" + '\n')
-        updateArea += '// END CAAFINDER EDITION ZONE\n'
-        content = content.replace(deleteArea,updateArea)
-        f = open(headerPath, 'w',encoding='iso-8859-1')
-        f.write(content)
-        f.close()
-
-    def parseImakefile(self,imakefilePath):
-        result = set()
-        cus = set()
-        if os.path.isfile(imakefilePath) and os.path.split(imakefilePath)[1] == 'Imakefile.mk' :
-            f = open(imakefilePath, 'r',encoding='iso-8859-1')
-            for line in f.readlines():
-                if line[0] == '#' or line[0] == '/':
-                    pass
-                elif line.find('LINK_WITH = $(CAAFINDER_LINK_MODULES)') != -1:
-                    for each in line.replace('LINK_WITH = $(CAAFINDER_LINK_MODULES)',' ').replace('\n',' ').split(' '):
-                        cus.add(each)
-                else:
-                    selector = [x for x in line.replace('\\',' ').replace('=',' ').split(' ') if len(x) > 3]
-                    for each in selector:
-                        fr = self.__data.querryByModuel(each)
-                        if fr != None:
-                            result.add(fr)
-            f.close()
-        return (result,cus)
-
-    def __modifyImakefile(self,imakefile,res,cus):
-        print(imakefile)
-        moduel = os.path.split(os.path.split(imakefile)[0])[1].split('.')[0]
-        content = '#======================================================================\n'
-        content += '# Imakefile for module %s\n' %moduel
-        content += '#======================================================================\n'
-        content += '#  %s Creation: Code generated by the CaaFinder\n'%datetime.now().strftime('20%y-%m-%d')
-        content += '#======================================================================\n'
-        content += '\n\n'
-        content += 'BUILT_OBJECT_TYPE=SHARED LIBRARY\n#BUILT_OBJECT_TYPE=LOAD MODULE\n'
-        content += '\n\n'
-        content += 'LINK_WITH = $(CAAFINDER_LINK_MODULES)'
-
-        for each in cus:
-            content += (' '+ each)
-        content += '\n'
-
-        content += "# DO NOT EDIT :: CAAFINDER WILL ADD CODE HERE\n"
-
-        content += 'CAAFINDER_LINK_MODULES = \\\n'
-
-        for each in res:
-            content += '%s \\\n'%each
-        content += '\n\n'
-        content += '#https://github.com/Gutier14/CAAFinder\n'
-        content += '#email: geekluca@qq.com\n'
-
-        f = open(imakefile,'w',encoding='iso-8859-1')
-        f.write(content)
-        f.close()
-        print(imakefile)
-
-    def __modifyIdentityCard(self,identitycardPath,res):
-        print(identitycardPath)
-        f = open(identitycardPath,'r',encoding='iso-8859-1')
-        conent = f.read()
-        f.close()
-
-        identityCard = etree.XML(conent.encode('utf-8'))
-
-        container = set()
-
-        for each in identityCard:
-            apptr = each.attrib
-            container.add(apptr['name'])
-
-        # print(len(container))
-        for each in res:
-            if each in container or each == 'Custom':
-                pass
-            else:
-                child = etree.Element("prerequisite", name=each,access="Public")
-                identityCard.append(child)
-        # print(len(identityCard))
-        f = open(identitycardPath,'w',encoding='iso-8859-1')
-        f.write(etree.tostring(identityCard, xml_declaration=True).decode('iso-8859-1'))
-        f.close()
-
-
-
-
 # 判定路径为workspace
 def isWorkspace(path):
     listDir = [x for x in os.listdir(path) if os.path.isdir(os.path.join(path,x))]
@@ -309,8 +200,8 @@ def isWorkspace(path):
                 flag = False
         return flag
 
-# 解析获取cpp所用的变量或类型
-def parseCpp(cppPath):
+# 解析获取cpp
+def parseCpp(cppPath, data=database()):
     result = set()
     f = open(cppPath, 'r',encoding='iso-8859-1')
     content = f.read()
@@ -331,33 +222,224 @@ def parseCpp(cppPath):
     for each in re.findall(' (.*?) ',content,re.S):
         if len(each) > 4 and each[:3] == 'CAT':
             result.add(each)
+    delType = set()
+    for each in result:
+        if data.querryByType(each) == None:
+            delType.add(each)
+    for each in delType:
+        result.remove(each)
     return result
 
 # 解析头文件
-def parseHeader(headerPath):
-    result = []
-    if os.path.isfile(headerPath) and os.path.splitext(headerPath)[1] == '.h' :
+def parseHeader(headerPath,data = database()):
+    res = set()
+    cus = set()
+    if os.path.isfile(headerPath) and os.path.splitext(headerPath)[1] == 'h' :
         f = open(headerPath, 'r',encoding='iso-8859-1')
-        for line in f.readlines():
-            index = line.strip().find('#include')
-            if index >= 0 and line[0] != '/':
-                result.append(line.strip()[8:].replace('\"','').replace(' ',''))
+        content = f.read()
         f.close()
-    return result
+
+        for each in re.findall('#include "(.*?)"',content,re.S):
+            if data.querryByHeader(each) != None:
+                res.add(each)
+            else:
+                cus.add(each)
+        for each in re.findall('#include <(.*?)>',content,re.S):
+            cus.add(each)
+
+    return (res,cus)
+
+# 解析Imakefile
+def parseImakefile(imakefilePath,data = database()):
+        res = set()
+        cus = set()
+        if os.path.isfile(imakefilePath) and os.path.split(imakefilePath)[1] == 'Imakefile.mk' :
+            f = open(imakefilePath, 'r',encoding='iso-8859-1')
+            for line in f.readlines():
+                if line[0] == '#' or line[0] == '/':
+                    pass
+                elif line.find('LINK_WITH = $(CAAFINDER_LINK_MODULES)') != -1:
+                    for each in line.replace('LINK_WITH = $(CAAFINDER_LINK_MODULES)',' ').replace('\n',' ').split(' '):
+                        if len(each) > 2:
+                            cus.add(each)
+                else:
+                    selector = [x for x in line.replace('\\',' ').replace('=',' ').split(' ') if len(x) > 3]
+                    for each in selector:
+                        fr = data.querryByModuel(each)
+                        if fr != None:
+                            res.add(each)
+            f.close()
+        return (res,cus)
+
+# 解析identityCard
+def parseIdentityCard(identitycardPath,data = database()):
+
+        res = set()
+        cus = set()
+
+        f = open(identitycardPath,'r',encoding='iso-8859-1')
+        conent = f.read()
+        f.close()
+
+        identityCard = etree.XML(conent.encode('utf-8'))
+
+        for each in identityCard:
+            apptr = each.attrib
+            fr = apptr['name']
+            if data.querryByFramework(fr):
+                res.add(fr)
+            else:
+                cus.add(fr)
+
+        return (res,cus)
+
+# 修改头文件
+def modifyHeader(headerPath,res,cus = set(),data = database()):
+
+        f = open(headerPath, 'r',encoding='iso-8859-1')
+        content = f.read()
+        f.close()
+
+        deleteArea = ''
+        deleteArealist = re.findall('// Add the DS Header by CAAFINDER(.*?)// END CAAFINDER EDITION ZONE',content,re.S)
+
+        if len(deleteArealist) == 1:
+            deleteArea = '// Add the DS Header by CAAFINDER' + deleteArealist[0] + '// END CAAFINDER EDITION ZONE'
+        else:
+            headerList = re.findall('include(.*?)\n',content)
+            deleteArea = "#include" + headerList[0] + re.findall('%s(.*?)%s'%(headerList[0],headerList[-1]),content,re.S)[0] + headerList[-1]
 
 
+        updateArea = "// Add the DS Header by CAAFINDER\n"
 
+        result = {}
+        for each in res:
+            fr = data.querryByHeader(each)[1]
+            if fr in result:
+                result[fr].append(each)
+            else:
+                result[fr] = [each]
 
+        for each in result:
+            updateArea += ('// ' + each + '\n')
+            for eachHeader in result[each]:
+                if eachHeader.find('>') >= 0:
+                    updateArea += ("#include " + eachHeader + '\n')
+                else:
+                    updateArea += ("#include \"" + eachHeader + "\"" + '\n')
+        if len(cus)>0:
 
+            result = set()
+            for each in cus:
+                if each.find('.')==-1:
+                    result.add(each)
+            if len(result)>0:
+                updateArea += "// C++ Standard\n"
+                for each in result:
+                    updateArea += ("#include <" + each + ">\n")
+                    cus.remove(each)
 
+            if len(cus) > 0:
+                updateArea += "// Custom header\n"
+                for each in cus:
+                    updateArea += ("#include \"" + each + "\"" + '\n')
+
+        updateArea += '\n\n\n\n'
+        updateArea += '// END CAAFINDER EDITION ZONE\n'
+        # print(updateArea)
+        content = content.replace(deleteArea,updateArea)
+        f = open(headerPath, 'w',encoding='iso-8859-1')
+        f.write(content)
+        f.close()
+
+# 修改Imakefile
+def modifyImakefile(imakefile,res,cus = set()):
+
+        moduel = os.path.split(os.path.split(imakefile)[0])[1].split('.')[0]
+        content = '#======================================================================\n'
+        content += '# Imakefile for module %s\n' %moduel
+        content += '#======================================================================\n'
+        content += '#  %s Creation: Code generated by the CAAFinder\n'%datetime.now().strftime('20%y-%m-%d')
+        content += '#======================================================================\n'
+        content += '\n\n'
+        content += 'BUILT_OBJECT_TYPE=SHARED LIBRARY\n#BUILT_OBJECT_TYPE=LOAD MODULE\n'
+        content += '\n\n'
+        content += 'LINK_WITH = $(CAAFINDER_LINK_MODULES)'
+
+        for each in cus:
+            content += (' '+ each)
+        content += '\n'
+
+        content += "# DO NOT EDIT :: CAAFINDER WILL ADD CODE HERE\n"
+
+        content += 'CAAFINDER_LINK_MODULES = \\\n'
+
+        for each in res:
+            content += '%s \\\n'%each
+        content += '# END CAAFINDER EDITION ZONE\n'
+        content += '\n\n'
+        content += '#https://github.com/Gutier14/CAAFinder\n'
+        content += '#email: geekluca@qq.com\n'
+
+        f = open(imakefile,'w',encoding='iso-8859-1')
+        f.write(content)
+        f.close()
+
+# 修改identityCard
+def modifyIdentityCard(identitycardPath,res,cus = set()):
+
+        f = open(identitycardPath,'r',encoding='iso-8859-1')
+        conent = f.read()
+        f.close()
+
+        identityCard = etree.XML(conent.encode('utf-8'))
+
+        container = set()
+
+        for each in identityCard:
+            apptr = each.attrib
+            container.add(apptr['name'])
+
+        # print(len(container))
+        for each in res:
+            if each not in container:
+                child = etree.Element("prerequisite", name=each,access="Public")
+                identityCard.append(child)
+
+        for each in cus:
+            if each not in container:
+                identityCard[len(identityCard)-1].tail += '  '
+                child = etree.Element("prerequisite", name=each,access="Public")
+                child.tail = "\n"
+                identityCard.append(child)
+
+        f = open(identitycardPath,'w',encoding='iso-8859-1')
+        f.write(etree.tostring(identityCard, xml_declaration=True).decode('iso-8859-1'))
+        f.close()
 
 
 
 
 if __name__=='__main__':
     a = workspace('GW')
-    a.info
-    a.backup()
-    a.complete()
-    # a.complete('GWSDDPartProofreader.m')
+    # a.completeModuel('GWSDDPartProofreader')
+    # a.completeFramework('GWStruct')
+    # a.info
+    # a.backup()
+    # a.complete()
+
     # parseIdentityCard('/Users/guti/Developer/CAAFinder/caafinder/GW_GWS_LC/GWStruct/IdentityCard/IdentityCard.xml')
+    cpp = '/Users/guti/Developer/CAAFinder/caafinder/GW/GWStruct/GWSDDPartProofreader.m/src/GWSDDPartProofreaderCmd.cpp'
+    header = '/Users/guti/Developer/CAAFinder/caafinder/GW/GWStruct/PrivateInterfaces/GWSDDPartProofreaderCmd.h'
+    imakefile = '/Users/guti/Developer/CAAFinder/caafinder/GW/GWStruct/GWSDDPartProofreader.m/Imakefile.mk'
+    identityCard = '/Users/guti/Developer/CAAFinder/caafinder/GW/GWStruct/IdentityCard/IdentityCard.xml'
+    # res = parseIdentityCard(identityCard)
+    a.completeUnit(cpp)
+    # print(len(res))
+    # print(res[0])
+    # print(res[1])
+    # modifyHeader(header,parseHeader(header)[0],parseHeader(header)[1])
+    # modifyIdentityCard(identityCard,res[0],{'GWTest','fadaffff'})
+    # modifyImakefile(imakefile,parseImakefile(imakefile)[0],parseImakefile(imakefile)[1])
+
+

@@ -139,7 +139,15 @@ class database(object):
             return result[0][-1]
         else:
             return None
-        
+    def querryByFramework(self,framework):
+        conn = sqlite3.connect(self.__path)
+        cursor = conn.cursor()
+        cursor.execute("select * from interface WHERE framework = '%s' " % framework)
+        result = cursor.fetchmany(1)
+        if len(result) == 1:
+            return True
+        else:
+            return None
 
 
     def __len__(self):
@@ -156,6 +164,6 @@ if __name__=='__main__':
     db = database()
     # db.initDatabase('/Users/guti/Developer/CAAFinderffffff')
     print(len(db))
-    print(db.querryByHeader('CATDlgUtility.h'))
-    print(db.querryByType('CATDlgUtility'))
-    print(db.querryByModuel('JS0FM'))
+    print(db.querryByHeader('CATBoolean.h'))
+    # print(db.querryByType('CATDlgUtility'))
+    # print(db.querryByModuel('JS0FM'))
