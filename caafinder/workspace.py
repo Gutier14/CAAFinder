@@ -77,7 +77,8 @@ class workspace(object):
                         f = open(tempPath,'r',encoding='iso-8859-1')
                         content = f.read()
                         f.close()
-                        if content.find(('class ' + eachfile.split('.')[0])) > 0 :
+                        if content.find('#include') > 0:
+                        # if content.find(('class ' + eachfile.split('.')[0])) > 0 :
                             hPath = tempPath
                             break
         if hPath == None:
@@ -145,7 +146,7 @@ class workspace(object):
                 self.completeModuel(eachdir.split('.')[0])
 
     def completeAll(self):
-        for each in self.info:
+        for each in self.__info:
             self.completeFramework(os.path.split(each)[1])
 
 
@@ -295,6 +296,7 @@ def parseIdentityCard(identitycardPath,data = database()):
 
 # 修改头文件
 def modifyHeader(headerPath,res,cus = set(),data = database()):
+        print('modify header',headerPath)
 
         f = open(headerPath, 'r',encoding='iso-8859-1')
         content = f.read()
@@ -421,12 +423,13 @@ def modifyIdentityCard(identitycardPath,res,cus = set()):
 
 
 if __name__=='__main__':
-    a = workspace('GW')
+    a = workspace('GW_GWS_LC')
     # a.completeModuel('GWSDDPartProofreader')
     # a.completeFramework('GWStruct')
     # a.info
     # a.backup()
-    # a.complete()
+
+    a.completeAll()
 
     # parseIdentityCard('/Users/guti/Developer/CAAFinder/caafinder/GW_GWS_LC/GWStruct/IdentityCard/IdentityCard.xml')
     cpp = '/Users/guti/Developer/CAAFinder/caafinder/GW/GWStruct/GWSDDPartProofreader.m/src/GWSDDPartProofreaderCmd.cpp'
@@ -434,7 +437,7 @@ if __name__=='__main__':
     imakefile = '/Users/guti/Developer/CAAFinder/caafinder/GW/GWStruct/GWSDDPartProofreader.m/Imakefile.mk'
     identityCard = '/Users/guti/Developer/CAAFinder/caafinder/GW/GWStruct/IdentityCard/IdentityCard.xml'
     # res = parseIdentityCard(identityCard)
-    a.completeUnit(cpp)
+    # a.completeUnit(cpp)
     # print(len(res))
     # print(res[0])
     # print(res[1])
