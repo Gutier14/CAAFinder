@@ -264,11 +264,13 @@ def parseImakefile(imakefilePath,data = database()):
                         if len(each) > 2:
                             cus.add(each)
                 else:
-                    selector = [x for x in line.replace('\\',' ').replace('=',' ').split(' ') if len(x) > 3]
+                    selector = [x for x in line.replace('\\',' ').replace('=',' ').replace('\n',' ').replace('_','').split(' ') if len(x) > 3]
                     for each in selector:
                         fr = data.querryByModuel(each)
                         if fr != None:
                             res.add(each)
+                        elif each != each.upper():
+                            cus.add(each)
             f.close()
         return (res,cus)
 
@@ -429,20 +431,22 @@ if __name__=='__main__':
     # a.info
     # a.backup()
 
-    a.completeModuel('GWSDDPartProofreader')
+    # a.completeModuel('GWSDDPartProofreader')
 
     # parseIdentityCard('/Users/guti/Developer/CAAFinder/caafinder/GW_GWS_LC/GWStruct/IdentityCard/IdentityCard.xml')
     cpp = '/Users/guti/Developer/CAAFinder/caafinder/GW/GWStruct/GWSDDPartProofreader.m/src/GWSDDPartProofreaderCmd.cpp'
     header = '/Users/guti/Developer/CAAFinder/caafinder/GW/GWStruct/PrivateInterfaces/GWSDDPartProofreaderCmd.h'
-    imakefile = '/Users/guti/Developer/CAAFinder/caafinder/GW/GWStruct/GWSDDPartProofreader.m/Imakefile.mk'
+    imakefile = '/Users/guti/Developer/CAAFinder/caafinder/GW_GWS_LC/GWStruct/GWSDDPartProofreader.m/Imakefile.mk'
     identityCard = '/Users/guti/Developer/CAAFinder/caafinder/GW/GWStruct/IdentityCard/IdentityCard.xml'
+    res = parseImakefile(imakefile)
+
     # res = parseIdentityCard(identityCard)
     # a.completeUnit(cpp)
-    # print(len(res))
-    # print(res[0])
-    # print(res[1])
+    print(len(res))
+    print(res[0])
+    print(res[1])
     # modifyHeader(header,parseHeader(header)[0],parseHeader(header)[1])
     # modifyIdentityCard(identityCard,res[0],{'GWTest','fadaffff'})
-    # modifyImakefile(imakefile,parseImakefile(imakefile)[0],parseImakefile(imakefile)[1])
+    # modifyImakefile(imakefile,res[0],res[1])
 
 
