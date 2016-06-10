@@ -269,7 +269,7 @@ def parseImakefile(imakefilePath,data = database()):
                         fr = data.querryByModuel(each)
                         if fr != None:
                             res.add(each)
-                        elif each != each.upper():
+                        elif each != each.upper() and each not in {'WindowsNT','SunOS'}:
                             cus.add(each)
             f.close()
         return (res,cus)
@@ -420,33 +420,5 @@ def modifyIdentityCard(identitycardPath,res,cus = set()):
         f = open(identitycardPath,'w',encoding='iso-8859-1')
         f.write(etree.tostring(identityCard, xml_declaration=True).decode('iso-8859-1'))
         f.close()
-
-
-
-
-if __name__=='__main__':
-    a = workspace('GW_GWS_LC')
-    # a.completeModuel('GWSDDPartProofreader')
-    # a.completeFramework('GWStruct')
-    # a.info
-    # a.backup()
-
-    # a.completeModuel('GWSDDPartProofreader')
-
-    # parseIdentityCard('/Users/guti/Developer/CAAFinder/caafinder/GW_GWS_LC/GWStruct/IdentityCard/IdentityCard.xml')
-    cpp = '/Users/guti/Developer/CAAFinder/caafinder/GW/GWStruct/GWSDDPartProofreader.m/src/GWSDDPartProofreaderCmd.cpp'
-    header = '/Users/guti/Developer/CAAFinder/caafinder/GW/GWStruct/PrivateInterfaces/GWSDDPartProofreaderCmd.h'
-    imakefile = '/Users/guti/Developer/CAAFinder/caafinder/GW_GWS_LC/GWStruct/GWSDDPartProofreader.m/Imakefile.mk'
-    identityCard = '/Users/guti/Developer/CAAFinder/caafinder/GW/GWStruct/IdentityCard/IdentityCard.xml'
-    res = parseImakefile(imakefile)
-
-    # res = parseIdentityCard(identityCard)
-    # a.completeUnit(cpp)
-    print(len(res))
-    print(res[0])
-    print(res[1])
-    # modifyHeader(header,parseHeader(header)[0],parseHeader(header)[1])
-    # modifyIdentityCard(identityCard,res[0],{'GWTest','fadaffff'})
-    # modifyImakefile(imakefile,res[0],res[1])
 
 

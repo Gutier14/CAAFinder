@@ -160,10 +160,3 @@ class database(object):
         conn.close()
         return num
 
-if __name__=='__main__':
-    db = database()
-    # db.initDatabase('/Users/guti/Developer/CAAFinderffffff')
-    print(len(db))
-    print(db.querryByHeader('CATBoolean.h'))
-    # print(db.querryByType('CATDlgUtility'))
-    # print(db.querryByModuel('JS0FM'))
