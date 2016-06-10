@@ -235,7 +235,7 @@ def parseCpp(cppPath, data=database()):
 def parseHeader(headerPath,data = database()):
     res = set()
     cus = set()
-    if os.path.isfile(headerPath) and os.path.splitext(headerPath)[1] == 'h' :
+    if os.path.isfile(headerPath) and os.path.splitext(headerPath)[1] == '.h' :
         f = open(headerPath, 'r',encoding='iso-8859-1')
         content = f.read()
         f.close()
@@ -429,7 +429,7 @@ if __name__=='__main__':
     # a.info
     # a.backup()
 
-    a.completeAll()
+    a.completeModuel('GWSDDPartProofreader')
 
     # parseIdentityCard('/Users/guti/Developer/CAAFinder/caafinder/GW_GWS_LC/GWStruct/IdentityCard/IdentityCard.xml')
     cpp = '/Users/guti/Developer/CAAFinder/caafinder/GW/GWStruct/GWSDDPartProofreader.m/src/GWSDDPartProofreaderCmd.cpp'
