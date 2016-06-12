@@ -264,7 +264,10 @@ def parseImakefile(imakefilePath,data = database()):
                         if len(each) > 2:
                             cus.add(each)
                 else:
-                    selector = [x for x in line.replace('\\',' ').replace('=',' ').replace('\n',' ').replace('_','').split(' ') if len(x) > 3]
+                    templist = line.split('#')
+                    if len(templist) > 1:
+                        line = templist[0]
+                    selector = [x for x in line.replace('\\',' ').replace('\t',' ').replace('=',' ').replace('\n',' ').replace('_','').split(' ') if len(x) > 3]
                     for each in selector:
                         fr = data.querryByModuel(each)
                         if fr != None:
@@ -311,7 +314,12 @@ def modifyHeader(headerPath,res,cus = set(),data = database()):
             deleteArea = '// Add the DS Header by CAAFINDER' + deleteArealist[0] + '// END CAAFINDER EDITION ZONE'
         else:
             headerList = re.findall('include(.*?)\n',content)
-            deleteArea = "#include" + headerList[0] + re.findall('%s(.*?)%s'%(headerList[0],headerList[-1]),content,re.S)[0] + headerList[-1]
+            deleteArea = ''
+            if len(headerList) == 1:
+                deleteArea = "#include" + headerList[0] + "\n"
+                pass
+            else:
+                deleteArea = "#include" + headerList[0] + re.findall('%s(.*?)%s'%(headerList[0],headerList[-1]),content,re.S)[0] + headerList[-1]
 
 
         updateArea = "// Add the DS Header by CAAFINDER\n"
