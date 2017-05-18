@@ -41,9 +41,9 @@ class database(object):
         if len(cursor.fetchall()) > 0:
             print('the item has inserted')
         else:
-            print((id,method,fullname,type,header,moduel,framework))
+            print(id,method,fullname,type,header,moduel,framework)
             cursor.execute("insert into interface (id, method, fullname, DStype, header, moduel, framework) values ('%s','%s','%s', '%s', '%s', '%s', '%s')" % (id,method,fullname,type,header,moduel,framework))
-            print(('insert:',method,fullname,header,moduel,framework))
+            print('insert:',method,fullname,header,moduel,framework)
         cursor.close()
         conn.commit()
         conn.close()
@@ -67,7 +67,7 @@ class database(object):
                     each = basePath + each[2:]
                     if os.path.isfile(each):
                         urlset.add(each)
-            print((len(urlset),'pages need to parse'))
+            print(len(urlset),'pages need to parse')
             for each in urlset:
                 self.parsePage(each)
 
@@ -104,11 +104,11 @@ class database(object):
                     self.insert(type,framework,header,moduel,method,fullname)
 
 
-                print(('parse ', os.path.split(path)[1], ' successful'))
+                print('parse ', os.path.split(path)[1], ' successful')
             else:
-                print(("parse Wrong:",path))
+                print("parse Wrong:",path)
         else:
-            print(("file don't exist:", path))
+            print("file don't exist:", path)
 
     def querryByHeader(self,header):
         conn = sqlite3.connect(self.__path)
