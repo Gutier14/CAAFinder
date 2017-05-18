@@ -60,7 +60,7 @@ class workspace(object):
                         ObjectsToDelete.append(x[0])
                 for x in ObjectsToDelete:
                     shutil.rmtree(x)
-                print(("copy " + each + " to " + targetPath + " success"))
+                print ("copy " + each + " to " + targetPath + " success")
 
     def completeUnit(self,cppPath):
         data = self.__data
@@ -105,13 +105,13 @@ class workspace(object):
 
                 if header not in headerDS and header != 'None':
                     headerDS.add(header)
-                    print(("add Header:" + header + ' to ' + hPath))
+                    print("add Header:" + header + ' to ' + hPath)
                 if moduel not in moduleDS and moduel != 'None':
                     moduleDS.add(moduel)
-                    print(("add moduel:" + moduel + ' to ' + mPath))
+                    print("add moduel:" + moduel + ' to ' + mPath)
                 if framework not in frameworkDS and framework != 'None':
                     frameworkDS.add(framework)
-                    print(("add framework:" +framework+ ' to ' + iPath))
+                    print("add framework:" +framework+ ' to ' + iPath)
 
 
             modifyHeader(hPath,headerDS,headerCS,data)
@@ -155,12 +155,12 @@ class workspace(object):
         return self.__name
     @property
     def info(self):
-        print((self.__name))
+        print(self.__name)
         if self.__name != None:
             for x in self.__info:
-                print(('\t',os.path.split(x)[1]))
+                print('\t',os.path.split(x)[1])
                 for y in self.__info[x]:
-                    print(('\t\t',os.path.split(y)[1]))
+                    print('\t\t',os.path.split(y)[1])
     @property
     def backupPath(self):
         return self.__backupPath
@@ -301,7 +301,7 @@ def parseIdentityCard(identitycardPath,data = database()):
 
 # 修改头文件
 def modifyHeader(headerPath,res,cus = set(),data = database()):
-        print(('modify header',headerPath))
+        print('modify header',headerPath)
 
         f = open(headerPath, 'r',encoding='iso-8859-1')
         content = f.read()
